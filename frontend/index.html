@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL Secure Training Lab</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- HEADER -->
+    <header>
+        <div class="container">
+            <div class="header-inner">
+                <div class="logo">
+                    <div class="logo-icon">🔓</div>
+                    SQL Secure Training Lab
+                </div>
+                <div class="badge-edu">⚠ Educacional</div>
+                <nav class="nav">
+                    <button class="nav-btn active" onclick="app.showMainTab('overview')">Overview</button>
+                    <button class="nav-btn" onclick="app.showMainTab('lab')">Laboratório</button>
+                    <button class="nav-btn" onclick="app.showMainTab('defesa')">Defesa</button>
+                    <button class="nav-btn" onclick="app.showMainTab('quiz')">Quiz</button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- PAGE OVERVIEW -->
+    <div id="page-overview" class="page">
+        <div class="container">
+            <div class="hero">
+                <div class="hero-tag">Apenas para fins educacionais</div>
+                <h1><span class="red">SQL Injection</span><br><span class="acc">Training Lab</span></h1>
+                <p class="hero-desc">Aprenda como ataques de SQL Injection funcionam na prática — e como defendê-los com prepared statements, ORM e boas práticas.</p>
+                <div class="hero-ctas">
+                    <button class="btn-primary" onclick="app.showMainTab('lab')">🧪 Abrir Laboratório</button>
+                    <button class="btn-outline" onclick="app.showMainTab('defesa')">🛡 Ver Defesas</button>
+                </div>
+            </div>
+
+            <div class="stats-bar" id="stats-bar">
+                <div class="stat-item"><div class="stat-num" id="stat-users">0</div><div class="stat-lbl">Usuários</div></div>
+                <div class="stat-item"><div class="stat-num" id="stat-products">0</div><div class="stat-lbl">Produtos</div></div>
+                <div class="stat-item"><div class="stat-num" id="stat-attempts">0</div><div class="stat-lbl">Tentativas</div></div>
+                <div class="stat-item"><div class="stat-num" id="stat-success">0%</div><div class="stat-lbl">Sucesso</div></div>
+            </div>
+
+            <div class="disclaimer">
+                <span class="icon">⚠️</span>
+                <span><strong>Aviso legal:</strong> Este laboratório é exclusivamente para fins educacionais. Todas as operações são registradas em banco de dados real. Nunca utilize estas técnicas em sistemas reais sem autorização explícita.</span>
+            </div>
+
+            <div class="section">
+                <div class="section-title"><span class="icon">📖</span> O que é SQL Injection?</div>
+                <p class="section-desc">SQL Injection (SQLi) é uma das vulnerabilidades mais antigas e prevalentes na segurança web. Ocorre quando entradas do usuário são inseridas diretamente em queries SQL sem sanitização adequada.</p>
+                <div class="split">
+                    <div class="terminal">
+                        <div class="terminal-header">
+                            <div class="window-dots"><div class="wd red"></div><div class="wd yellow"></div><div class="wd green"></div></div>
+                            <span class="term-title">consulta VULNERÁVEL</span>
+                        </div>
+                        <div class="terminal-body">
+                            <div class="term-comment">// ❌ Código vulnerável</div>
+                            <br>
+                            <span class="term-prompt">$</span> <span class="term-cmd">username = req.body.user</span><br>
+                            <span class="term-prompt">$</span> <span class="term-cmd">password = req.body.pass</span><br>
+                            <br>
+                            <span class="term-prompt">$</span> <span class="term-cmd">const query = `SELECT * FROM users</span><br>
+                            &nbsp;&nbsp;<span class="term-cmd">WHERE username='${username}'</span><br>
+                            &nbsp;&nbsp;<span class="term-cmd">AND password='${password}'`</span><br>
+                            <br>
+                            <div class="term-warn">⚠ Entrada não sanitizada!</div>
+                        </div>
+                    </div>
+                    <div class="terminal">
+                        <div class="terminal-header">
+                            <div class="window-dots"><div class="wd red"></div><div class="wd yellow"></div><div class="wd green"></div></div>
+                            <span class="term-title">ataque em ação</span>
+                        </div>
+                        <div class="terminal-body">
+                            <div class="term-comment">// Atacante digita:</div>
+                            <br>
+                            <span class="term-err">admin' OR '1'='1' --</span><br>
+                            <br>
+                            <div class="term-comment">// Query resultante:</div>
+                            <span class="term-warn">SELECT * FROM users</span><br>
+                            <span class="term-warn">WHERE user='admin'</span><br>
+                            <span class="term-err">OR '1'='1' --'</span><br>
+                            <span class="term-warn">AND pass='qualquer'</span><br>
+                            <br>
+                            <div class="term-err">✗ Login bypassed!</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+        <!-- PAGE LAB -->
+<div id="page-lab" class="page" style="display:none">
+    <div class="container" style="padding-top:40px">
+        <div class="disclaimer">
+            <span class="icon">🧪</span>
+            <span>Esta é uma implementação REAL com banco de dados MySQL. Todas as queries são executadas e registradas em log.</span>
+        </div>
+
+        <div class="tabs-container">
+            <div class="tabs">
+                <button class="tab active" onclick="app.switchLabTab(this, 'tab-bypass')"><span class="dot red"></span>Auth Bypass</button>
+                <button class="tab" onclick="app.switchLabTab(this, 'tab-union')"><span class="dot red"></span>UNION Attack</button>
+                <button class="tab" onclick="app.switchLabTab(this, 'tab-blind')"><span class="dot red"></span>Blind SQLi</button>
+                <button class="tab" onclick="app.switchLabTab(this, 'tab-error')"><span class="dot red"></span>Error-Based</button>
+                <button class="tab" onclick="app.switchLabTab(this, 'tab-payloads')"><span class="dot red"></span>Payloads</button>
+                <button class="tab" onclick="app.switchLabTab(this, 'tab-db')"><span class="dot green"></span>Banco de Dados</button>
+            </div>
+
+            <!-- AUTH BYPASS -->
+            <div id="tab-bypass" class="tab-panel active">
+                <div class="section-title"><span class="icon">🔓</span> Authentication Bypass</div>
+                <p class="section-desc">Manipular a lógica da query de login para autenticar sem saber a senha.</p>
+                <div class="split">
+                    <div>
+                        <div class="card glow-danger">
+                            <div class="card-header">
+                                <div class="window-dots"><div class="wd red"></div><div class="wd yellow"></div><div class="wd green"></div></div>
+                                <span class="card-title">🔴 Login <span class="label label-danger">VULNERÁVEL</span></span>
+                                <span class="card-title" style="margin-left: auto;">🟢 Login <span class="label label-success">SEGURO</span></span>
+                            </div>
+                            <div class="card-body">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                                    <!-- Versão Vulnerável -->
+                                    <div>
+                                        <div class="demo-form">
+                                            <div class="form-group">
+                                                <label class="form-label">Usuário (Vulnerável)</label>
+                                                <input class="form-input" id="vuln-user" type="text" placeholder="Digite o usuário...">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label">Senha</label>
+                                                <input class="form-input" id="vuln-pass" type="text" placeholder="Digite a senha...">
+                                            </div>
+                                            <button class="btn-primary" onclick="app.vulnLogin()">Login Vulnerável</button>
+                                            <div id="vuln-result" class="result-box"></div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Versão Segura -->
+                                    <div>
+                                        <div class="demo-form">
+                                            <div class="form-group">
+                                                <label class="form-label">Usuário (Seguro)</label>
+                                                <input class="form-input" id="secure-user" type="text" placeholder="Digite o usuário...">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="form-label">Senha</label>
+                                                <input class="form-input" id="secure-pass" type="text" placeholder="Digite a senha...">
+                                            </div>
+                                            <button class="btn-primary" onclick="app.secureLogin()">Login Seguro</button>
+                                            <div id="secure-result" class="result-box"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="payload-quick-buttons" style="margin-top: 20px;">
+                                    <button class="try-btn" onclick="app.setPayload('admin\' OR \'1\'=\'1\' --', 'qualquer')">admin' OR '1'='1' --</button>
+                                    <button class="try-btn" onclick="app.setPayload('admin\'#', 'qualquer')">admin'#</button>
+                                    <button class="try-btn" onclick="app.setPayload('\' OR 1=1 LIMIT 1 --', 'x')">' OR 1=1 LIMIT 1 --</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="card">
+                            <div class="card-header"><span class="card-title">📝 Query Executada</span></div>
+                            <div class="card-body">
+                                <div id="query-log" class="code-block" style="min-height: 100px;">
+                                    Aguardando requisição...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- UNION ATTACK -->
+            <div id="tab-union" class="tab-panel">
+                <div class="section-title"><span class="icon">🔗</span> UNION-Based Attack</div>
+                <p class="section-desc">Usa a cláusula UNION para combinar a query original com uma nova SELECT, extraindo dados de outras tabelas.</p>
+                <div class="split">
+                    <div>
+                        <div class="card glow-danger">
+                            <div class="card-header">
+                                <span class="card-title">🔴 Busca Vulnerável</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="demo-form">
+                                    <div class="form-group">
+                                        <label class="form-label">Pesquisar produto</label>
+                                        <input class="form-input" id="union-search" type="text" placeholder="Ex: Laptop" value="Laptop">
+                                    </div>
+                                    <button class="btn-primary" onclick="app.unionSearch()">Pesquisar</button>
+                                    <div id="union-result" class="result-box"></div>
+                                    
+                                    <div class="payload-quick-buttons" style="margin-top: 10px;">
+                                        <button class="try-btn" onclick="app.setUnionPayload('\' ORDER BY 3--')">ORDER BY 3--</button>
+                                        <button class="try-btn" onclick="app.setUnionPayload('\' UNION SELECT 1,username,password FROM users--')">UNION SELECT users</button>
+                                        <button class="try-btn" onclick="app.setUnionPayload('\' UNION SELECT 1,@@version,database()--')">Versão do DB</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="card">
+                            <div class="card-header"><span class="card-title">📊 Resultado</span></div>
+                            <div class="card-body" id="union-data">
+                                Faça uma busca para ver os resultados
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BLIND SQLi -->
+            <div id="tab-blind" class="tab-panel">
+                <div class="section-title"><span class="icon">🕶️</span> Blind SQL Injection</div>
+                <p class="section-desc">Quando a aplicação não exibe erros nem resultados — mas o atacante pode inferir informações observando o comportamento.</p>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="demo-form">
+                            <div class="form-group">
+                                <label class="form-label">ID do usuário para testar</label>
+                                <input class="form-input" id="blind-id" type="text" placeholder="Ex: 1" value="1">
+                            </div>
+                            <button class="btn-primary" onclick="app.blindTest()">Testar Blind SQLi</button>
+                            <div id="blind-result" class="result-box"></div>
+                            
+                            <div style="margin-top: 20px;">
+                                <h4>Payloads para testar:</h4>
+                                <button class="try-btn" onclick="app.setBlindPayload('1 AND 1=1')">1 AND 1=1 (TRUE)</button>
+                                <button class="try-btn" onclick="app.setBlindPayload('1 AND 1=2')">1 AND 1=2 (FALSE)</button>
+                                <button class="try-btn" onclick="app.setBlindPayload('1 AND (SELECT COUNT(*) FROM users) > 0')">Verificar users</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ERROR-BASED -->
+            <div id="tab-error" class="tab-panel">
+                <div class="section-title"><span class="icon">💥</span> Error-Based Injection</div>
+                <p class="section-desc">Usa mensagens de erro do banco de dados para extrair informações.</p>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="demo-form">
+                            <div class="form-group">
+                                <label class="form-label">ID do produto</label>
+                                <input class="form-input" id="error-id" type="text" placeholder="Ex: 1" value="1">
+                            </div>
+                            <button class="btn-primary" onclick="app.errorSearch()">Buscar</button>
+                            <div id="error-result" class="result-box"></div>
+                            
+                            <div style="margin-top: 20px;">
+                                <button class="try-btn" onclick="app.setErrorPayload('1 AND extractvalue(1,concat(0x7e,(SELECT version())))--')">Error-Based MySQL</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PAYLOADS TABLE -->
+            <div id="tab-payloads" class="tab-panel">
+                <div class="section-title"><span class="icon">📋</span> Biblioteca de Payloads</div>
+                <div class="card">
+                    <div class="card-body" style="padding:0">
+                        <table class="payload-table" id="payload-table">
+                            <thead>
+                                <tr>
+                                    <th>Tipo</th>
+                                    <th>Payload</th>
+                                    <th>Objetivo</th>
+                                    <th>Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="payload-tbody">
+                                <!-- Preenchido via JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DB VIEWER -->
+            <div id="tab-db" class="tab-panel">
+                <div class="section-title"><span class="icon">🗄️</span> Dados do Banco</div>
+                <div class="split">
+                    <div>
+                        <h3>Usuários</h3>
+                        <div class="card">
+                            <div class="card-body" style="padding:0">
+                                <table class="db-table" id="users-table">
+                                    <thead>
+                                        <tr><th>ID</th><th>Username</th><th>Email</th><th>Role</th></tr>
+                                    </thead>
+                                    <tbody id="users-tbody">
+                                        <tr><td colspan="4">Carregando...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3>Produtos</h3>
+                        <div class="card">
+                            <div class="card-body" style="padding:0">
+                                <table class="db-table" id="products-table">
+                                    <thead>
+                                        <tr><th>ID</th><th>Nome</th><th>Preço</th></tr>
+                                    </thead>
+                                    <tbody id="products-tbody">
+                                        <tr><td colspan="3">Carregando...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+    </div>
+
+    <!-- PAGE DEFESA (COMPLETA) -->
+    <div id="page-defesa" class="page" style="display:none">
+        <div class="container" style="padding-top:40px">
+            <div class="section-title"><span class="icon">🛡️</span> Técnicas de Defesa</div>
+            <p class="section-desc">As contramedidas certas eliminam completamente o risco de SQL Injection. Veja cada técnica com exemplos de código.</p>
+
+            <div class="tabs-container">
+                <div class="tabs">
+                    <button class="tab active" onclick="app.switchDefesaTab(this, 'def-prepared')"><span class="dot green"></span>Prepared Statements</button>
+                    <button class="tab" onclick="app.switchDefesaTab(this, 'def-orm')"><span class="dot green"></span>ORM</button>
+                    <button class="tab" onclick="app.switchDefesaTab(this, 'def-validation')"><span class="dot green"></span>Validação</button>
+                    <button class="tab" onclick="app.switchDefesaTab(this, 'def-waf')"><span class="dot green"></span>WAF</button>
+                    <button class="tab" onclick="app.switchDefesaTab(this, 'def-checklist')"><span class="dot green"></span>Checklist</button>
+                </div>
+
+                <!-- PREPARED STATEMENTS -->
+                <div id="def-prepared" class="tab-panel active">
+                    <div class="section-title" style="margin-bottom:8px"><span class="icon">✅</span> Prepared Statements</div>
+                    <p style="font-size:14px;color:var(--text2);margin-bottom:24px;line-height:1.6">A principal e mais eficaz defesa. Separa completamente o código SQL dos dados do usuário — tornando injeção impossível.</p>
+                    <div class="compare-grid">
+                        <div class="compare-card bad">
+                            <div class="compare-card-header">❌ Código Vulnerável</div>
+                            <div class="code-block" style="border:none;border-radius:0">
+<span class="c">// Node.js com mysql2 — ERRADO</span><br>
+<span class="k">app.post</span>(<span class="s">'/login'</span>, (req, res) => {<br>
+&nbsp;&nbsp;<span class="k">const</span> { user, pass } = req.body;<br>
+<br>
+&nbsp;&nbsp;<span class="c">// ❌ Interpolação direta</span><br>
+&nbsp;&nbsp;<span class="k">const</span> sql = <span class="danger">`SELECT * FROM users<br>
+&nbsp;&nbsp;&nbsp;WHERE username='${user}'<br>
+&nbsp;&nbsp;&nbsp;AND password='${pass}'`</span>;<br>
+<br>
+&nbsp;&nbsp;db.query(sql, (err, rows) => {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="c">// ...</span><br>
+&nbsp;&nbsp;});<br>
+});
+                            </div>
+                        </div>
+                        <div class="compare-card good">
+                            <div class="compare-card-header">✅ Código Seguro</div>
+                            <div class="code-block" style="border:none;border-radius:0">
+<span class="c">// Node.js com mysql2 — CORRETO</span><br>
+<span class="k">app.post</span>(<span class="s">'/login'</span>, (req, res) => {<br>
+&nbsp;&nbsp;<span class="k">const</span> { user, pass } = req.body;<br>
+<br>
+&nbsp;&nbsp;<span class="c">// ✅ Prepared statement com ?</span><br>
+&nbsp;&nbsp;<span class="k">const</span> sql = <span class="ok">`SELECT * FROM users<br>
+&nbsp;&nbsp;&nbsp;WHERE username=<span class="s">?</span><br>
+&nbsp;&nbsp;&nbsp;AND password=<span class="s">?</span>`</span>;<br>
+<br>
+&nbsp;&nbsp;db.query(sql, <span class="ok">[user, pass]</span>, (err, r) => {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="c">// Dados tratados automaticamente</span><br>
+&nbsp;&nbsp;});<br>
+});
+                            </div>
+                        </div>
+                    </div>
+                    <div style="margin-top:16px;padding:16px 20px;background:var(--success-bg);border:1px solid rgba(0,230,118,0.3);border-radius:var(--radius)">
+                        <p style="font-size:13px;color:var(--success2);line-height:1.7">
+                            ✅ <strong>Por que funciona:</strong> O banco de dados pré-compila a query SQL e trata os parâmetros como dados puros, nunca como código. Mesmo que o usuário insira <code style="font-family:var(--mono);font-size:12px">'; DROP TABLE users--</code>, isso seria tratado como uma string literal — não como SQL executável.
+                        </p>
+                    </div>
+
+                    <div style="margin-top:24px">
+                        <div class="section-title" style="font-size:18px;margin-bottom:16px">Outros exemplos de linguagens</div>
+                        <div class="compare-grid">
+                            <div>
+                                <div style="font-size:12px;color:var(--text3);margin-bottom:8px;font-family:var(--mono)">PHP (PDO)</div>
+                                <div class="code-block">
+<span class="k">$stmt</span> = <span class="ok">$pdo->prepare</span>(<br>
+&nbsp;&nbsp;<span class="s">"SELECT * FROM users<br>
+&nbsp;&nbsp; WHERE username=<span class="ok">:user</span>"</span><br>
+);<br>
+<span class="k">$stmt</span>-><span class="ok">execute</span>([<span class="s">'user'</span> => <span class="w">$username</span>]);<br>
+<span class="k">$result</span> = <span class="k">$stmt</span>-><span class="ok">fetchAll</span>();
+                                </div>
+                            </div>
+                            <div>
+                                <div style="font-size:12px;color:var(--text3);margin-bottom:8px;font-family:var(--mono)">Python (psycopg2)</div>
+                                <div class="code-block">
+<span class="c"># PostgreSQL</span><br>
+cursor.<span class="ok">execute</span>(<br>
+&nbsp;&nbsp;<span class="s">"SELECT * FROM users<br>
+&nbsp;&nbsp; WHERE username = <span class="ok">%s</span>"</span>,<br>
+&nbsp;&nbsp;<span class="ok">(username,)</span><br>
+)<br>
+result = cursor.<span class="ok">fetchall</span>()
+                                </div>
+                            </div>
+                            <div>
+                                <div style="font-size:12px;color:var(--text3);margin-bottom:8px;font-family:var(--mono)">Java (PreparedStatement)</div>
+                                <div class="code-block">
+<span class="k">String</span> sql = <span class="s">"SELECT * FROM users<br>
+&nbsp;WHERE username=<span class="ok">?"</span></span>;<br>
+<span class="k">PreparedStatement</span> ps =<br>
+&nbsp;&nbsp;conn.<span class="ok">prepareStatement</span>(sql);<br>
+ps.<span class="ok">setString</span>(1, username);<br>
+<span class="k">ResultSet</span> rs = ps.<span class="ok">executeQuery</span>();
+                                </div>
+                            </div>
+                            <div>
+                                <div style="font-size:12px;color:var(--text3);margin-bottom:8px;font-family:var(--mono)">C# (.NET)</div>
+                                <div class="code-block">
+<span class="k">var</span> cmd = <span class="k">new</span> SqlCommand(<br>
+&nbsp;&nbsp;<span class="s">"SELECT * FROM users<br>
+&nbsp;&nbsp; WHERE username=<span class="ok">@user</span>"</span>, conn);<br>
+cmd.Parameters.<span class="ok">AddWithValue</span>(<br>
+&nbsp;&nbsp;<span class="s">"@user"</span>, username);<br>
+<span class="k">var</span> reader = cmd.<span class="ok">ExecuteReader</span>();
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ORM -->
+                <div id="def-orm" class="tab-panel">
+                    <div class="section-title" style="margin-bottom:8px"><span class="icon">🏗️</span> ORM (Object-Relational Mapping)</div>
+                    <p style="font-size:14px;color:var(--text2);margin-bottom:24px;line-height:1.6">ORMs abstraem queries SQL e usam prepared statements internamente. A maioria elimina SQLi por design.</p>
+                    <div class="compare-grid">
+                        <div>
+                            <div style="font-size:12px;color:var(--text3);margin-bottom:8px;font-family:var(--mono)">Sequelize (Node.js)</div>
+                            <div class="code-block">
+<span class="k">const</span> user = <span class="k">await</span> User.<span class="ok">findOne</span>({<br>
+&nbsp;&nbsp;where: {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;username: <span class="ok">username</span>, <span class="c">// ✅ seguro</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;password: <span class="ok">password</span><br>
+&nbsp;&nbsp;}<br>
+});<br>
+<br>
+<span class="c">// Sequelize gera internamente:</span><br>
+<span class="c">// SELECT * FROM users</span><br>
+<span class="c">// WHERE username=? AND password=?</span>
+                            </div>
+                        </div>
+                        <div>
+                            <div style="font-size:12px;color:var(--text3);margin-bottom:8px;font-family:var(--mono)">Prisma (Node.js/TypeScript)</div>
+                            <div class="code-block">
+<span class="k">const</span> user = <span class="k">await</span> prisma.user.<span class="ok">findFirst</span>({<br>
+&nbsp;&nbsp;where: {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;username: <span class="ok">username</span>,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;password: <span class="ok">hashedPass</span><br>
+&nbsp;&nbsp;}<br>
+});<br>
+<br>
+<span class="c">// ✅ 100% seguro contra SQLi</span>
+                            </div>
+                        </div>
+                        <div>
+                            <div style="font-size:12px;color:var(--text3);margin-bottom:8px;font-family:var(--mono)">SQLAlchemy (Python)</div>
+                            <div class="code-block">
+user = db.session.query(User)<br>
+&nbsp;&nbsp;.<span class="ok">filter_by</span>(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;username=username,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;password=password<br>
+&nbsp;&nbsp;).<span class="ok">first</span>()<br>
+<br>
+<span class="c"># ✅ Parametrizado automaticamente</span>
+                            </div>
+                        </div>
+                        <div>
+                            <div style="font-size:12px;color:var(--text3);margin-bottom:8px;font-family:var(--mono)">Hibernate (Java)</div>
+                            <div class="code-block">
+User user = session<br>
+&nbsp;&nbsp;.createQuery(<span class="s"><br>
+&nbsp;&nbsp;&nbsp;&nbsp;"FROM User WHERE<br>
+&nbsp;&nbsp;&nbsp;&nbsp; username=<span class="ok">:u</span>"</span>, User.<span class="k">class</span>)<br>
+&nbsp;&nbsp;.<span class="ok">setParameter</span>(<span class="s">"u"</span>, username)<br>
+&nbsp;&nbsp;.getSingleResult();
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VALIDAÇÃO -->
+                <div id="def-validation" class="tab-panel">
+                    <div class="section-title" style="margin-bottom:8px"><span class="icon">🔍</span> Validação e Sanitização de Entrada</div>
+                    <p style="font-size:14px;color:var(--text2);margin-bottom:24px;line-height:1.6">Defesa em camadas: validar formato antes de usar. Não substitui prepared statements, mas adiciona proteção extra.</p>
+                    <div class="compare-grid">
+                        <div class="compare-card bad">
+                            <div class="compare-card-header">❌ Sem validação</div>
+                            <div class="code-block" style="border:none;border-radius:0">
+<span class="k">app.get</span>(<span class="s">'/user/:id'</span>, (req, res) => {<br>
+&nbsp;&nbsp;<span class="k">const</span> id = req.params.id;<br>
+&nbsp;&nbsp;<span class="c">// ❌ Nenhuma validação!</span><br>
+&nbsp;&nbsp;<span class="danger">// id pode ser: 1 OR 1=1</span><br>
+&nbsp;&nbsp;db.query(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="danger">`SELECT * FROM users WHERE id=${id}`</span><br>
+&nbsp;&nbsp;);<br>
+});
+                            </div>
+                        </div>
+                        <div class="compare-card good">
+                            <div class="compare-card-header">✅ Com validação</div>
+                            <div class="code-block" style="border:none;border-radius:0">
+<span class="k">app.get</span>(<span class="s">'/user/:id'</span>, (req, res) => {<br>
+&nbsp;&nbsp;<span class="k">const</span> id = req.params.id;<br>
+<br>
+&nbsp;&nbsp;<span class="c">// ✅ Validar formato</span><br>
+&nbsp;&nbsp;<span class="k">if</span> (!<span class="ok">/^\d+$/.test(id)</span>) {<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="k">return</span> res.status(400).<span class="ok">json</span>(<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{ error: <span class="s">'ID inválido'</span> }<br>
+&nbsp;&nbsp;&nbsp;&nbsp;);<br>
+&nbsp;&nbsp;}<br>
+&nbsp;&nbsp;<span class="c">// ✅ + prepared statement</span><br>
+&nbsp;&nbsp;db.query(<span class="ok">'SELECT * FROM users WHERE id=?'</span>, [id]);<br>
+});
+                            </div>
+                        </div>
+                    </div>
+                    <div style="margin-top:20px">
+                        <div style="font-size:14px;font-weight:600;margin-bottom:12px">Lista de verificação de validação</div>
+                        <div class="accordion">
+                            <div class="acc-item open">
+                                <div class="acc-header" onclick="app.toggleAcc(this)">Princípio do mínimo privilégio <span class="ch">▾</span></div>
+                                <div class="acc-body" style="font-size:13px;color:var(--text2);line-height:1.7">
+                                    O usuário do banco de dados da aplicação deve ter apenas as permissões necessárias. Ex: uma aplicação de leitura não precisa de UPDATE/DELETE. Isso limita o dano mesmo que uma injeção seja bem-sucedida.
+                                </div>
+                            </div>
+                            <div class="acc-item">
+                                <div class="acc-header" onclick="app.toggleAcc(this)">Nunca exibir erros SQL ao usuário <span class="ch">▾</span></div>
+                                <div class="acc-body" style="font-size:13px;color:var(--text2);line-height:1.7">
+                                    Mensagens de erro detalhadas do banco revelam estrutura, versão e outros dados ao atacante. Use logs internos e exiba apenas mensagens genéricas para o usuário final.
+                                </div>
+                            </div>
+                            <div class="acc-item">
+                                <div class="acc-header" onclick="app.toggleAcc(this)">Whitelist de caracteres permitidos <span class="ch">▾</span></div>
+                                <div class="acc-body" style="font-size:13px;color:var(--text2);line-height:1.7">
+                                    Para campos com formato conhecido (ID numérico, email, CPF), valide com regex rigoroso antes de usar. Rejeite qualquer entrada que não corresponda ao padrão esperado.
+                                </div>
+                            </div>
+                            <div class="acc-item">
+                                <div class="acc-header" onclick="app.toggleAcc(this)">Senhas com hash (bcrypt) <span class="ch">▾</span></div>
+                                <div class="acc-body">
+                                    <div class="code-block">
+<span class="c">// Nunca armazene senha em texto puro!</span><br>
+<span class="k">const</span> bcrypt = require(<span class="s">'bcrypt'</span>);<br>
+<span class="k">const</span> hash = <span class="k">await</span> bcrypt.<span class="ok">hash</span>(password, 12);<br>
+<span class="c">// Salva hash no banco, não a senha</span><br>
+<br>
+<span class="c">// Verificação:</span><br>
+<span class="k">const</span> ok = <span class="k">await</span> bcrypt.<span class="ok">compare</span>(input, hash);
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- WAF -->
+                <div id="def-waf" class="tab-panel">
+                    <div class="section-title" style="margin-bottom:8px"><span class="icon">🧱</span> WAF (Web Application Firewall)</div>
+                    <p style="font-size:14px;color:var(--text2);margin-bottom:24px;line-height:1.6">Uma camada adicional de proteção na borda. WAFs detectam e bloqueiam payloads SQLi antes que cheguem à aplicação.</p>
+                    <div class="split">
+                        <div>
+                            <div class="card" style="margin-bottom:16px">
+                                <div class="card-header"><span class="card-title">🔍 Padrões que WAF bloqueia</span></div>
+                                <div class="card-body">
+                                    <div style="display:flex;flex-direction:column;gap:8px">
+                                        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--danger-bg);border-radius:6px">
+                                            <code class="payload-code" style="font-size:11px">SELECT * FROM</code>
+                                            <span class="label label-danger" style="font-size:10px">BLOQUEADO</span>
+                                        </div>
+                                        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--danger-bg);border-radius:6px">
+                                            <code class="payload-code" style="font-size:11px">UNION SELECT</code>
+                                            <span class="label label-danger" style="font-size:10px">BLOQUEADO</span>
+                                        </div>
+                                        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--danger-bg);border-radius:6px">
+                                            <code class="payload-code" style="font-size:11px">' OR '1'='1</code>
+                                            <span class="label label-danger" style="font-size:10px">BLOQUEADO</span>
+                                        </div>
+                                        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--danger-bg);border-radius:6px">
+                                            <code class="payload-code" style="font-size:11px">DROP TABLE</code>
+                                            <span class="label label-danger" style="font-size:10px">BLOQUEADO</span>
+                                        </div>
+                                        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--warn-bg);border-radius:6px">
+                                            <code class="payload-code" style="font-size:11px">admin</code>
+                                            <span class="label label-warn" style="font-size:10px">PERMITIDO</span>
+                                        </div>
+                                        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--success-bg);border-radius:6px">
+                                            <code class="payload-code" style="font-size:11px;color:var(--success2)">produto seguro</code>
+                                            <span class="label label-success" style="font-size:10px">PERMITIDO</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="card">
+                                <div class="card-header"><span class="card-title">⚠️ Limitações do WAF</span></div>
+                                <div class="card-body">
+                                    <div class="steps">
+                                        <div class="step">
+                                            <div class="step-num" style="background:var(--warn-bg);border-color:var(--warn);color:var(--warn2)">!</div>
+                                            <div class="step-content">
+                                                <div class="step-title" style="font-size:13px">WAF não substitui código seguro</div>
+                                                <div class="step-desc">Atacantes experientes conseguem bypassar WAFs com encodings, case variation e outros truques. WAF é uma camada, não a solução.</div>
+                                            </div>
+                                        </div>
+                                        <div class="step">
+                                            <div class="step-num" style="background:var(--warn-bg);border-color:var(--warn);color:var(--warn2)">!</div>
+                                            <div class="step-content">
+                                                <div class="step-title" style="font-size:13px">Falsos positivos</div>
+                                                <div class="step-desc">WAFs muito rigorosos podem bloquear requisições legítimas que contenham keywords SQL em contextos normais.</div>
+                                            </div>
+                                        </div>
+                                        <div class="step">
+                                            <div class="step-num" style="background:var(--warn-bg);border-color:var(--warn);color:var(--warn2)">!</div>
+                                            <div class="step-content">
+                                                <div class="step-title" style="font-size:13px">Blind SQLi dificilmente bloqueado</div>
+                                                <div class="step-desc">Ataques time-based e boolean-based são difíceis de distinguir de tráfego legítimo.</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CHECKLIST -->
+                <div id="def-checklist" class="tab-panel">
+                    <div class="section-title" style="margin-bottom:8px"><span class="icon">✅</span> Checklist de Segurança</div>
+                    <p style="font-size:14px;color:var(--text2);margin-bottom:24px;line-height:1.6">Marque cada item ao implementar sua aplicação. Uma aplicação segura implementa TODOS estes pontos.</p>
+                    <div id="checklist-container"></div>
+                    <div style="margin-top:24px">
+                        <div style="font-size:14px;color:var(--text2);margin-bottom:8px">Progresso de segurança</div>
+                        <div class="progress-bar" style="height:8px"><div class="progress-fill" id="checklist-progress" style="width:0%"></div></div>
+                        <div style="display:flex;justify-content:space-between;margin-top:6px">
+                            <span style="font-size:12px;color:var(--text3)" id="checklist-score">0/0 itens</span>
+                            <span style="font-size:12px;color:var(--accent);font-family:var(--mono)" id="checklist-pct">0%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAGE QUIZ (COMPLETA) -->
+    <div id="page-quiz" class="page" style="display:none">
+        <div class="container" style="padding-top:40px;max-width:760px">
+            <div class="section-title"><span class="icon">🎯</span> Quiz de Conhecimento</div>
+            <p class="section-desc">Teste o que aprendeu sobre SQL Injection e defesas. 10 questões de múltipla escolha.</p>
+            <div id="quiz-container"></div>
+            <div id="quiz-summary" style="display:none">
+                <div class="card" style="text-align:center;padding:40px">
+                    <div style="font-size:48px;margin-bottom:16px" id="quiz-emoji">🎉</div>
+                    <div style="font-size:32px;font-weight:700;margin-bottom:8px" id="quiz-final-score"></div>
+                    <div style="font-size:14px;color:var(--text2);margin-bottom:24px" id="quiz-message"></div>
+                    <div class="progress-bar" style="height:8px;max-width:300px;margin:0 auto 16px"><div class="progress-fill" id="quiz-progress-bar" style="width:0%"></div></div>
+                    <button class="btn-primary" style="margin:0 auto" onclick="app.resetQuiz()">↺ Recomeçar Quiz</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <div class="footer-text">
+                SQL Secure Training Lab — Projeto educacional com banco de dados real<br>
+                <span style="font-size:12px;color:var(--text3)">⚠ Use apenas em ambientes autorizados. Todas as operações são registradas.</span>
+            </div>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
